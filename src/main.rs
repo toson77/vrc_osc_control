@@ -1,14 +1,26 @@
+use anyhow::Error;
+use futures::{SinkExt, StreamExt};
+use reqwasm::websocket::{futures::WebSocket, Message};
+use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 
 enum Msg {
-    AddOne,
+    ButtonClick,
+}
+
+struct OperationStatus {
+    isUp: bool,
+    isDown: bool,
+    isRight: bool,
+    isLeft: bool,
+    isJump: bool,
 }
 
 struct Model {
-    value: i64,
+    ws: Result<WebSocket, Error>,
 }
 
-impl Component for Model {
+impl Component for OperationComponent {
     type Message = Msg;
     type Properties = ();
 
