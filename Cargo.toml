@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 wasm-bindgen = "0.2.79"
 wasm-logger = "0.2.0"
+log = "0.4.14"
 yew = "0.19.3"
 reqwasm = "0.4.1"
 wasm-bindgen-futures = "0.4.29"

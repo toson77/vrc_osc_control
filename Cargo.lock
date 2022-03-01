@@ -481,6 +481,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "futures",
+ "log",
  "reqwasm",
  "wasm-bindgen",
  "wasm-bindgen-futures",
