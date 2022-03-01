@@ -1,62 +1,57 @@
 use anyhow::Error;
+use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt};
 use reqwasm::websocket::{futures::WebSocket, Message};
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 
 enum Msg {
-    ButtonDown,
-    ButtonUp,
-}
-
-struct OperationStatus {
-    isUp: bool,
-    isDown: bool,
-    isRight: bool,
-    isLeft: bool,
-    isJump: bool,
+    StButtonDown,
+    StButtonUp,
+    LeftButtonDown,
+    LeftButtonUp,
+    RightButtonDown,
+    RightButtonUp,
+    BackButtonDown,
+    BackButtonUp,
+    JumpButtonDown,
+    JumpButtonUp,
 }
 
 struct Model {
-    ws: Result<WebSocket, Error>,
+    ws_read: SplitStream<WebSocket>,
+    ws_write: SplitSink<WebSocket, Message>,
 }
 
-impl Component for OperationStatus {
+impl Component for Model {
     type Message = Msg;
     type Properties = ();
 
     fn create(_ctx: &Context<Self>) -> Self {
+        let mut ws = WebSocket::open("ws://localhost:8000").unwrap();
+        let (mut write, mut read) = ws.split();
         Self {
-            isUp: false,
-            isDown: false,
-            isRight: false,
-            isLeft: false,
-            isJump: false,
+            ws_read: read,
+            ws_write: write,
         }
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::ButtonDown => {
-                self.isUp = true;
+            Msg::StButtonDown => {
                 // the value has changed so we need to
                 // re-render for it to appear on the page
                 log::info!("isUp:true");
-                //websocket
-                let mut ws = WebSocket::open("ws://localhost:8000").unwrap();
-                let (mut write, mut read) = ws.split();
                 spawn_local(async move {
-                    write
-                        .send(Message::Text(String::from("test")))
-                        .await
-                        .unwrap();
-                    write
-                        .send(Message::Text(String::from("test 2")))
+                    self.ws_write
+                        .send(Message::Text(String::from(
+                            r#"{"addr":/input/Vertical, "args":1}"#,
+                        )))
                         .await
                         .unwrap();
                 });
                 spawn_local(async move {
-                    while let Some(msg) = read.next().await {
+                    while let Some(msg) = &self.ws_read.next().await {
                         log::info!("{}", format!("1. {:?}", msg));
                     }
                     log::info!("WebSocket closed");
@@ -64,11 +59,18 @@ impl Component for OperationStatus {
 
                 true
             }
-            Msg::ButtonUp => {
-                self.isUp = false;
+            Msg::StButtonUp => {
                 log::info!("isUp:false");
                 true
             }
+            Msg::BackButtonUp => true,
+            Msg::BackButtonDown => true,
+            Msg::RightButtonUp => true,
+            Msg::RightButtonDown => true,
+            Msg::LeftButtonUp => true,
+            Msg::LeftButtonDown => true,
+            Msg::JumpButtonUp => true,
+            Msg::JumpButtonDown => true,
         }
     }
 
@@ -83,7 +85,7 @@ impl Component for OperationStatus {
                     </header>
                     <div class="btn-wrapper h-80 grid grid-cols-3 grid-rows-3 flex justify-center max-w-screen-md ">
                         <div class="p-1 justify-self-center"></div>
-                            <button class="px-2 py-1 m-1 bg-blue-400 text-white sm:text-lg font-semibold rounded hover:bg-blue-500" onmousedown={link.callback(|_| Msg::ButtonDown)} onmouseup={link.callback(|_| Msg::ButtonUp)}>{"STRAIGHT"}</button>
+                            <button class="px-2 py-1 m-1 bg-blue-400 text-white sm:text-lg font-semibold rounded hover:bg-blue-500" onmousedown={link.callback(|_| Msg::StButtonDown)} onmouseup={link.callback(|_| Msg::StButtonUp)}>{"STRAIGHT"}</button>
                         <div class="p-1 justify-self-center"></div>
                             <button class=" px-2 py-1 m-1 bg-blue-400 text-white sm:text-lg font-semibold rounded hover:bg-blue-500">{"LEFT"}</button>
                             <button class="px-2 py-1 m-1 bg-blue-400 text-white sm:text-lg font-semibold rounded hover:bg-blue-500">{"JUMP"}</button>
@@ -100,5 +102,5 @@ impl Component for OperationStatus {
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());
-    yew::start_app::<OperationStatus>();
+    yew::start_app::<Model>();
 }
